@@ -248,9 +248,13 @@
       - section9.2.13
 
   - name: 9.2.14 Check for Duplicate UIDs (Scored)
-    debug: msg="*** To do later"
+    shell: for dupeID in  $(cut -f3 -d":" /etc/passwd | sort | uniq -c | sort -n | awk ' $1 > 1 {print $2}'); do awk -F':' -v dupeid=$dupeID '$3 == dupeid {print $1}' /etc/passwd   ; done
+    register: result9_2_14
+    changed_when: "result9_2_14.stdout"
+    always_run: yes
     tags:
       - scored
+      - check-only
       - section9.2
       - section9.2.14
 
