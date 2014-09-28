@@ -240,12 +240,51 @@
       - section9.2
       - section9.2.12
 
-  - name: 9.2.13 Check User Home Directory Ownership (Scored)
-    debug: msg="*** To do later"
+### BEGIN task 9.2.13
+  - name: 9.2.13 Get a list of interactive users
+    shell: awk -F':' '$3>499 {print $1}' /etc/passwd
+    register: interactive_users
+    always_run: yes
     tags:
       - scored
       - section9.2
       - section9.2.13
+
+  - name: 9.2.13 Get a list of interactive users' home directories
+    shell: awk -F':' '$3>499 {print $6}' /etc/passwd
+    register: interactive_users_homedirs
+    always_run: yes
+    tags:
+      - scored
+      - section9.2
+      - section9.2.13
+
+  - name:  9.2.13 Check user portion ownership of home dirs
+### This KINDA works, do NOT rely on it
+### This is an attempt at check-only mode of displaying bad owners.
+    shell: if [[ $(find {{ item.1 }} -maxdepth 0 -user {{ item.0 }} -type d) != {{ item.1 }} ]]; then echo "{{ item.1 }}"; fi
+    with_together:
+      - interactive_users.stdout_lines
+      - interactive_users_homedirs.stdout_lines
+    register: bad_homeowners
+    changed_when: "bad_homeowners"
+    #always_run: yes
+    tags:
+      - check-only
+      - scored
+      - section9.2
+      - section9.2.13
+
+  - name:  9.2.13 [Modify] Check User Home Directory Ownership (Scored)
+    file: path={{ item.1 }} owner={{ item.0 }} state=directory recurse=no
+    with_together:
+      - interactive_users.stdout_lines
+      - interactive_users_homedirs.stdout_lines
+    tags:
+      - scored
+      - section9.2
+      - section9.2.13
+### END task 9.2.13
 
   - name: 9.2.14 Check for Duplicate UIDs (Scored)
     shell: for dupeID in  $(cut -f3 -d":" /etc/passwd | sort | uniq -c | sort -n | awk ' $1 > 1 {print $2}'); do awk -F':' -v dupeid=$dupeID '$3 == dupeid {print $1}' /etc/passwd   ; done
