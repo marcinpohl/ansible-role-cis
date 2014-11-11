@@ -233,15 +233,46 @@
       - section9.2
       - section9.2.11
 
-  - name: 9.2.12 Check That Users Are Assigned Valid Home Directories (Scored)
-    debug: msg="*** To do later"
+### BEGIN task 9.2.12
+  - name: 9.2.12 Get a list of interactive users' usernames
+    shell: awk -F':' '$3>499 && $1 !~ /nfsnobody/ {print $1}' /etc/passwd
+    register: interactive_users
     tags:
       - scored
       - section9.2
       - section9.2.12
 
+  - name: 9.2.12 Get a list of interactive users' home directories
+    shell: awk -F':' '$3>499 && $1 !~ /nfsnobody/ {print $6}' /etc/passwd
+    register: interactive_users_homedirs
+    tags:
+      - scored
+      - section9.2
+      - section9.2.12
+  - debug: msg="{{ item }} is a line from the result of this command"
+    with_lines:
+      - cat /etc/group
+    tags:
+      - section9.2.13
+
+  - debug: msg={{ etcgroup }}
+    tags:
+      - section9.2.12
+
+  - name: 9.2.12 Check That Users Are Assigned Valid Home Directories (Scored)
+    file: path={{ item.1 }} owner={{ item.0 }} group={{ item.2 }} state=directory recurse=no
+    with_together:
+      - interactive_users.stdout_lines
+#      - interactive_users_groups.stdout_lines
+      - interactive_users_homedirs.stdout_lines
+    tags:
+      - scored
+      - section9.2
+#      - section9.2.12
+### END task 9.2.12
+
 ### BEGIN task 9.2.13
-  - name: 9.2.13 Get a list of interactive users
+  - name: 9.2.13 Get a list of interactive users' usernames
     shell: awk -F':' '$3>499 {print $1}' /etc/passwd
     register: interactive_users
     always_run: yes

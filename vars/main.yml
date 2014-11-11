@@ -1,2 +1,4 @@
 ---
 # vars file for .
+  vars:
+    etcgroup: "{{ lookup('file','/etc/group') }}"
